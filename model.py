@@ -98,11 +98,11 @@ def shore_design_matrix(radial_order, zeta, gtab, tau=1 / (4 * np.pi ** 2)):
 class Model(sfm.SparseFascicleModel):
     @sfm.auto_attr
     def design_matrix(self):
-        #return sfm_design_matrix(self.gtab, self.sphere,
-        #                         responses=my_responses)
-        return shore_design_matrix(40, 2000, self.gtab)
+        return sfm_design_matrix(self.gtab, self.sphere,
+                                 responses=my_responses)
+        #return shore_design_matrix(40, 2000, self.gtab)
         
-    def fit(self, data, mask=None):
+    def fit(self, data, TE=None, te_order=3, mask=None):
         """
         Fit the SparseFascicleModel object to data
 
@@ -112,6 +112,8 @@ class Model(sfm.SparseFascicleModel):
             The measured signal.
 
         TE : the measurement TE.
+
+        te_order : degree of the polynomial to fit to the TE-dependence of S0
         
         mask : array, optional
             A boolean array used to mark the coordinates in the data that
@@ -123,45 +125,31 @@ class Model(sfm.SparseFascicleModel):
         Fit object
 
         """
-        if mask is None:
-            flat_data = np.reshape(data, (-1, data.shape[-1]))
-        else:
-            mask = np.array(mask, dtype=bool, copy=False)
-            flat_data = np.reshape(data[mask], (-1, data.shape[-1]))
+        te_params = np.polyfit(TE[..., self.gtab.b0s_mask],
+                               np.log(data[..., self.gtab.b0s_mask]), te_order)
 
-        # Fitting is done on the relative signal (S/S0):
-        flat_S0 = np.mean(flat_data[..., self.gtab.b0s_mask], -1)
-        flat_S = flat_data[..., ~self.gtab.b0s_mask] / flat_S0[..., None]
-        flat_isotropic = self.isotropic(self.gtab).fit(flat_data).predict()
-        flat_params = np.zeros((flat_data.shape[0],
-                                self.design_matrix.shape[-1]))
-
-        for vox, vox_data in enumerate(flat_S):
-            
-            if np.any(np.isnan(vox_data)):
-                pass
-            else:
-                fit_it = vox_data - flat_isotropic[vox]
-                flat_params[vox] = self.solver.fit(self.design_matrix,
-                                                   fit_it).coef_
-        if mask is None:
-            out_shape = data.shape[:-1] + (-1, )
-            beta = flat_params.reshape(out_shape)
-            iso_out = flat_isotropic.reshape(out_shape)
-            S0 = flat_S0.reshape(out_shape).squeeze()
-        else:
-            beta = np.zeros(data.shape[:-1] +
-                            (self.design_matrix.shape[-1],))
-            beta[mask, :] = flat_params
-            iso_out = np.zeros(data[..., ~self.gtab.b0s_mask].shape)
-            iso_out[mask, ...] = flat_isotropic.squeeze()
-            S0 = np.zeros(data.shape[:-1])
-            S0[mask] = flat_S0
-
-        return Fit(self, beta, S0, iso_out.squeeze())
-
+        data_no_te = np.zeros_like(data)
+        for ii in range(data_no_te.shape[0]):
+            this_te = TE[ii]
+            te_idx = (TE==this_te)
+            te_s0 = np.mean(data[te_idx * self.gtab.b0s_mask])
+            te_est = np.exp(np.polyval(te_params, this_te))
+            data_no_te[ii] = data[ii]/te_est
+    
+        sf_fit = sfm.SparseFascicleModel.fit(self, data_no_te, mask)
+        return Fit(sf_fit, te_params)
+        
+        
 class Fit(sfm.SparseFascicleFit):
-    def predict(self, gtab=None, responses=my_responses, S0=None):
+    def __init__(self, sf_fit, te_params):
+        self.model = sf_fit.model
+        self.beta = sf_fit.beta
+        self.S0 = sf_fit.S0
+        self.iso = sf_fit.iso
+        self.te_params = te_params
+
+        
+    def predict(self, gtab, TE, responses=my_responses, S0=None):
         """
         Predict the signal based on the SFM parameters
 
@@ -188,21 +176,32 @@ class Fit(sfm.SparseFascicleFit):
         # The only thing we can't change at this point is the sphere we use
         # (which sets the width of our design matrix):
         else:
-            #_matrix = sfm_design_matrix(gtab, self.model.sphere, responses)
-            _matrix = shore_design_matrix(40, 2000, gtab)
+            _matrix = sfm_design_matrix(gtab, self.model.sphere, responses)
+            #_matrix = shore_design_matrix(40, 2000, gtab)
         # Get them all at once:
         beta_all = self.beta.reshape(-1, self.beta.shape[-1])
         pred_weighted = np.dot(_matrix, beta_all.T).T
         pred_weighted = pred_weighted.reshape(self.beta.shape[:-1] +
                                               (_matrix.shape[0],))
+
         if S0 is None:
             S0 = self.S0
         if isinstance(S0, np.ndarray):
             S0 = S0[..., None]
-        if isinstance(self.iso, np.ndarray):
-            iso_signal = self.iso[..., None]
-        pre_pred_sig = S0 * (pred_weighted + iso_signal.squeeze())
+
+        iso_signal = self.iso.predict(gtab)
+
+        pre_pred_sig = S0 * (pred_weighted +
+                             iso_signal.reshape(pred_weighted.shape))
         pred_sig = np.zeros(pre_pred_sig.shape[:-1] + (gtab.bvals.shape[0],))
         pred_sig[..., ~gtab.b0s_mask] = pre_pred_sig
         pred_sig[..., gtab.b0s_mask] = S0
-        return pred_sig.squeeze()
+
+        predict_with_te = np.zeros_like(pred_sig)
+        for ii in range(predict_with_te.shape[0]):
+            this_te = TE[ii]
+            te_idx = (TE==this_te)
+            te_est = np.exp(np.polyval(self.te_params, this_te))
+            predict_with_te[ii] = pred_sig[ii] * te_est
+
+        return predict_with_te
