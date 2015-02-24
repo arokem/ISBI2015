@@ -179,6 +179,9 @@ class Model(sfm.SparseFascicleModel):
         Fit object
 
         """
+        # XXX Make sure that signals are no higher than their relevant S0 (the
+        # ones with the corresponding TE). If they are, correct them to be
+        # equal to the S0.
         te_params = np.polyfit(TE[..., self.gtab.b0s_mask],
                                np.log(data[..., self.gtab.b0s_mask]), te_order)
 
@@ -259,3 +262,5 @@ class Fit(sfm.SparseFascicleFit):
             predict_with_te[ii] = pred_sig[ii] * te_est
 
         return predict_with_te
+
+
