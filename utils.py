@@ -36,3 +36,14 @@ def read_data():
     data['seen']['signalX'] =  np.loadtxt('./seenSignaX.txt', skiprows=1)
 
     return data
+
+def ADC(data, gtab, TE):
+
+    norm_sig = np.zeros_like(data)
+    for ii in range(norm_sig.shape[0]):
+            this_te = TE[ii]
+            te_idx = (TE==this_te)
+            te_s0 = np.mean(data[te_idx * gtab.b0s_mask])
+            norm_sig[ii] = data[ii] / te_s0
+    
+    return -np.log(norm_sig) / gtab.bvals
