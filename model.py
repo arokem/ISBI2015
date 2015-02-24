@@ -5,12 +5,66 @@ from dipy.reconst.shm import real_sph_harm
 from scipy.special import genlaguerre, gamma
 from math import factorial
 import dipy.core.gradients as grad
+import scipy.optimize as opt
 
 my_responses =[[0.0015, 0.0005, 0.0005],
                [0.001, 0.0005, 0.0005],
                [0.0015, 0.0003, 0.0003],
                [0.002, 0.001, 0.001]
                ]
+
+class BiExponentialIsotropicModel(sfm.IsotropicModel):
+    def _nlls_err_func(self, parameter, data):
+        bvals = self.gtab.bvals[~self.gtab.b0s_mask]
+        n = bvals.shape[0]
+        noise = parameter[0]
+        alpha_1 = parameter[1]
+        alpha_2 = parameter[2]
+        tensor_1 = parameter[3]
+        tensor_2 = parameter[4]
+        
+        y = noise + alpha_1*np.exp(-bvals*tensor_1) + alpha_2*np.exp(-bvals*tensor_2)        
+        residuals = data - y
+        return residuals
+    
+    def fit(self, data):
+        if len(data.shape) == 1:
+            n_vox = 1
+        else:
+            n_vox = data.shape[0]
+
+        data_no_b0 = data[..., ~self.gtab.b0s_mask]
+        if np.sum(self.gtab.b0s_mask) > 0:
+            s0 = np.mean(data[..., self.gtab.b0s_mask], -1)
+            to_fit = data_no_b0 / s0[..., None]
+        else:
+            to_fit = data_no_b0
+    
+        start_params = np.ones((n_vox, 5))
+        start_params[:,0] *= 0.0
+        start_params[:,1] *= 0.8
+        start_params[:,2] *= 0.2
+        start_params[:,3] *= 0.001
+        start_params[:,4] *= 0.0002
+        
+        params, status = opt.leastsq(self._nlls_err_func, start_params, args=(to_fit.squeeze()))
+        
+        return BiExponentialIsotropicFit(self, params, n_vox)
+
+class BiExponentialIsotropicFit(sfm.IsotropicFit):
+    def predict(self, gtab=None):
+        if gtab is None:
+            gtab = self.model.gtab
+            
+        bvals = gtab.bvals[~gtab.b0s_mask]    
+        noise = self.params[0]
+        alpha_1 = self.params[1]
+        alpha_2 = self.params[2]
+        tensor_1 = self.params[3]
+        tensor_2 = self.params[4]    
+            
+        y = noise + alpha_1*np.exp(-bvals*tensor_1) + alpha_2*np.exp(-bvals*tensor_2)   
+        return y
 
 def sfm_design_matrix(gtab, sphere, responses=my_responses):
         dm = []
