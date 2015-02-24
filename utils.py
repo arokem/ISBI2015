@@ -47,3 +47,7 @@ def ADC(data, gtab, TE):
             norm_sig[ii] = data[ii] / te_s0
     
     return -np.log(norm_sig) / gtab.bvals
+
+
+def LSE(prediction, signal, sigma=8):
+    return np.mean(((prediction - np.sqrt(signal**2 + sigma**2))**2)/(sigma**2))
