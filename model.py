@@ -6,12 +6,14 @@ from scipy.special import genlaguerre, gamma
 from math import factorial
 import dipy.core.gradients as grad
 import scipy.optimize as opt
+import scipy.stats as stats
 
-my_responses =[[0.0015, 0.0005, 0.0005],
-               [0.001, 0.0005, 0.0005],
-               [0.0015, 0.0003, 0.0003],
-               [0.002, 0.001, 0.001]
-               ]
+my_responses = []
+
+for ad in np.arange(0.001, 0.0018, 0.0005):
+    for rd in np.arange(0, ad, 0.0005):
+        this_response = [ad, rd, rd]
+        my_responses.append(this_response)
 
 class BiExponentialIsotropicModel(sfm.IsotropicModel):
     def _nlls_err_func(self, parameter, data):
@@ -23,7 +25,9 @@ class BiExponentialIsotropicModel(sfm.IsotropicModel):
         tensor_1 = parameter[3]
         tensor_2 = parameter[4]
         
-        y = noise + alpha_1*np.exp(-bvals*tensor_1) + alpha_2*np.exp(-bvals*tensor_2)        
+        y = (noise +
+             alpha_1 * np.exp(-bvals*tensor_1) +
+             alpha_2 * np.exp(-bvals*tensor_2))
         residuals = data - y
         return residuals
     
@@ -47,7 +51,9 @@ class BiExponentialIsotropicModel(sfm.IsotropicModel):
         start_params[:,3] *= 0.001
         start_params[:,4] *= 0.0002
         
-        params, status = opt.leastsq(self._nlls_err_func, start_params, args=(to_fit.squeeze()))
+        params, status = opt.leastsq(self._nlls_err_func,
+                                     start_params,
+                                     args=(to_fit.squeeze()))
         
         return BiExponentialIsotropicFit(self, params, n_vox)
 
@@ -63,8 +69,11 @@ class BiExponentialIsotropicFit(sfm.IsotropicFit):
         tensor_1 = self.params[3]
         tensor_2 = self.params[4]    
             
-        y = noise + alpha_1*np.exp(-bvals*tensor_1) + alpha_2*np.exp(-bvals*tensor_2)   
+        y = (noise +
+             alpha_1*np.exp(-bvals*tensor_1) +
+             alpha_2*np.exp(-bvals*tensor_2))    
         return y
+
 
 def sfm_design_matrix(gtab, sphere, responses=my_responses):
         dm = []
@@ -179,9 +188,7 @@ class Model(sfm.SparseFascicleModel):
         Fit object
 
         """
-        # XXX Make sure that signals are no higher than their relevant S0 (the
-        # ones with the corresponding TE). If they are, correct them to be
-        # equal to the S0.
+        
         te_params = np.polyfit(TE[..., self.gtab.b0s_mask],
                                np.log(data[..., self.gtab.b0s_mask]), te_order)
 
@@ -189,10 +196,15 @@ class Model(sfm.SparseFascicleModel):
         for ii in range(data_no_te.shape[0]):
             this_te = TE[ii]
             te_idx = (TE==this_te)
-            te_s0 = np.mean(data[te_idx * self.gtab.b0s_mask])
+            this_s0 = data[te_idx * self.gtab.b0s_mask]
+            # Make sure that signals are no higher than their relevant S0 (the
+            # ones with the corresponding TE). If they are, correct them:
+            #if data[ii] > stats.scoreatpercentile(this_s0, 86):
+            #    print("this!")
+            #    data[ii] = stats.scoreatpercentile(this_s0, 86)
             te_est = np.exp(np.polyval(te_params, this_te))
-            data_no_te[ii] = data[ii]/te_est
-    
+            data_no_te[ii] = data[ii] / te_est
+            
         sf_fit = sfm.SparseFascicleModel.fit(self, data_no_te, mask)
         return Fit(sf_fit, te_params)
         

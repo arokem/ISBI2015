@@ -51,3 +51,11 @@ def ADC(data, gtab, TE):
 
 def LSE(prediction, signal, sigma=8):
     return np.mean(((prediction - np.sqrt(signal**2 + sigma**2))**2)/(sigma**2))
+
+def RMSE(prediction, signal):
+    return np.sqrt(np.mean((prediction - signal)**2))
+
+
+
+
+
