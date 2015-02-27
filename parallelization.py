@@ -4,15 +4,16 @@ import sys
 
 class parallelization():
     """
-    Parallelization Class for Function Calls
+    Parallelization Class for Function Calls.
     """
     def __init__(self, maximum_number_of_cores=cpu_count()):
         """
-        Initialize a Parallelization Class
+        Initialize a Parallelization Class.
         
-        Parameters
+        Parameters:
         ----------
-        (optional) maximum_number_of_cores: (int) Maximal Number of available CPUs
+        (optional) maximum_number_of_cores: (int) Maximal number of available CPUs, automatic assignment is
+                                            all available ones.
         """
         self.maximum_number_of_cores = maximum_number_of_cores
         return None
@@ -70,17 +71,26 @@ class parallelization():
         
     def start(self, function, number_of_voxels, *args):
         """"
-        Starts the Parallelization of the Parallelization Class
+        Starts the Parallelization of the Parallelization Class.
         
-        Parameter
-        ---------
+        Parameters:
+        ----------
         function:           (List) List of functions that should be executed, if always the same 
-                            function should be used, then a list of one function [function] has to be assigned.
-        number_of_voxels:   (int) Number of Processes to be parallelized
-        (optional) *args:   (List) Parameter for executed function. ALL PARAMETER MUST BE ASSIGNED, even optional ones if
-                            one optional parameter should be used, in the correct order, without name assignement.
+                            function should be used, then a list containing only one function [function] has to be assigned.
+        number_of_voxels:   (int) Amount of Processes to be parallelized.
+        (optional) *args:   (Tuple of Lists) Parameter for executed function. ALL PARAMETER MUST BE ASSIGNED, even optional
+                            ones if one optional parameter should be used, in the correct order, without name assignement.
                             If always the same parameter should be used, then a list containing one parameter [parameter]
                             has to be assigned.
+                            
+        Returns:
+        --------
+        List of return values from the excecuted function. The length equals number_of_voxels.
+                            
+        Example:
+        -------
+        models = p.start([TensorModel], 4, [gtab1, gtab2, gtab3, gtab4])
+        fits = p.start([i.fit for i in models], 4, [data1, data2, data3, data4], [TE])
         """
         #Multicore Calculation
         self.number_of_cores = cpu_count()
