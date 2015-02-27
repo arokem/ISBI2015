@@ -3,7 +3,17 @@ from multiprocessing import Process, Queue, Array, Value, cpu_count
 import sys
 
 class parallelization():
+    """
+    Parallelization Class for Function Calls
+    """
     def __init__(self, maximum_number_of_cores=cpu_count()):
+        """
+        Initialize a Parallelization Class
+        
+        Parameters
+        ----------
+        (optional) maximum_number_of_cores: (int) Maximal Number of available CPUs
+        """
         self.maximum_number_of_cores = maximum_number_of_cores
         return None
         
@@ -59,6 +69,19 @@ class parallelization():
             q.put(results)
         
     def start(self, function, number_of_voxels, *args):
+        """"
+        Starts the Parallelization of the Parallelization Class
+        
+        Parameter
+        ---------
+        function:           (List) List of functions that should be executed, if always the same 
+                            function should be used, then a list of one function [function] has to be assigned.
+        number_of_voxels:   (int) Number of Processes to be parallelized
+        (optional) *args:   (List) Parameter for executed function. ALL PARAMETER MUST BE ASSIGNED, even optional ones if
+                            one optional parameter should be used, in the correct order, without name assignement.
+                            If always the same parameter should be used, then a list containing one parameter [parameter]
+                            has to be assigned.
+        """
         #Multicore Calculation
         self.number_of_cores = cpu_count()
         if self.maximum_number_of_cores < self.number_of_cores:
