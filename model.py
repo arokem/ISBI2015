@@ -83,80 +83,6 @@ def sfm_design_matrix(gtab, sphere, responses=my_responses):
         return np.concatenate(dm, -1)
 
 
-def _kappa(zeta, n, l):
-    return np.sqrt((2 * factorial(n - l)) / (zeta ** 1.5 * gamma(n + 1.5)))
-
-
-def shore_design_matrix(radial_order, zeta, gtab, tau=1 / (4 * np.pi ** 2)):
-    r"""Compute the SHORE matrix for modified Merlet's 3D-SHORE [1]_
-
-    ..math::
-            :nowrap:
-                \begin{equation}
-                    \textbf{E}(q\textbf{u})=\sum_{l=0, even}^{N_{max}}
-                                            \sum_{n=l}^{(N_{max}+l)/2}
-                                            \sum_{m=-l}^l c_{nlm}
-                                            \phi_{nlm}(q\textbf{u})
-                \end{equation}
-
-    where $\phi_{nlm}$ is
-    ..math::
-            :nowrap:
-                \begin{equation}
-                    \phi_{nlm}^{SHORE}(q\textbf{u})=\Biggl[\dfrac{2(n-l)!}
-                        {\zeta^{3/2} \Gamma(n+3/2)} \Biggr]^{1/2}
-                        \Biggl(\dfrac{q^2}{\zeta}\Biggr)^{l/2}
-                        exp\Biggl(\dfrac{-q^2}{2\zeta}\Biggr)
-                        L^{l+1/2}_{n-l} \Biggl(\dfrac{q^2}{\zeta}\Biggr)
-                        Y_l^m(\textbf{u}).
-                \end{equation}
-
-    Parameters
-    ----------
-    radial_order : unsigned int,
-        an even integer that represent the order of the basis
-    zeta : unsigned int,
-        scale factor
-    gtab : GradientTable,
-        gradient directions and bvalues container class
-    tau : float,
-        diffusion time. By default the value that makes q=sqrt(b).
-
-    References
-    ----------
-    .. [1] Merlet S. et. al, "Continuous diffusion signal, EAP and
-    ODF estimation via Compressive Sensing in diffusion MRI", Medical
-    Image Analysis, 2013.
-
-    """
-    mat_gtab = grad.gradient_table(gtab.bvals[~gtab.b0s_mask],
-                                   gtab.bvecs[~gtab.b0s_mask])
-
-    qvals = np.sqrt(mat_gtab.bvals / (4 * np.pi ** 2 * tau))
-    qvals[mat_gtab.b0s_mask] = 0
-    bvecs = mat_gtab.bvecs
-
-    qgradients = qvals[:, None] * bvecs
-
-    r, theta, phi = cart2sphere(qgradients[:, 0], qgradients[:, 1],
-                                qgradients[:, 2])
-    theta[np.isnan(theta)] = 0
-    F = radial_order / 2
-    n_c = np.round(1 / 6.0 * (F + 1) * (F + 2) * (4 * F + 3))
-    M = np.zeros((r.shape[0], n_c))
-
-    counter = 0
-    for l in range(0, radial_order + 1, 2):
-        for n in range(l, int((radial_order + l) / 2) + 1):
-            for m in range(-l, l + 1):
-                M[:, counter] = real_sph_harm(m, l, theta, phi) * \
-                    genlaguerre(n - l, l + 0.5)(r ** 2 / zeta) * \
-                    np.exp(- r ** 2 / (2.0 * zeta)) * \
-                    _kappa(zeta, n, l) * \
-                    (r ** 2 / zeta) ** (l / 2)
-                counter += 1
-    return M
-
 
 class Model(sfm.SparseFascicleModel):
     @sfm.auto_attr
@@ -204,13 +130,56 @@ class Model(sfm.SparseFascicleModel):
             #    data[ii] = stats.scoreatpercentile(this_s0, 86)
             te_est = np.exp(np.polyval(te_params, this_te))
             data_no_te[ii] = data[ii] / te_est
-            
-        sf_fit = sfm.SparseFascicleModel.fit(self, data_no_te, mask)
+        
+        # weight each row by relative TE
+        weight = np.exp(np.polyval(te_params, TE[~self.gtab.b0s_mask, None]))
+        weight = weight / np.sum(weight)
+        self.weight = weight
+        data = data_no_te        
+
+        if mask is None:
+            flat_data = np.reshape(data, (-1, data.shape[-1]))
+        else:
+            mask = np.array(mask, dtype=bool, copy=False)
+            flat_data = np.reshape(data[mask], (-1, data.shape[-1]))
+
+        # Fitting is done on the relative signal (S/S0):
+        flat_S0 = np.mean(flat_data[..., self.gtab.b0s_mask], -1)
+        flat_S = flat_data[..., ~self.gtab.b0s_mask] / flat_S0[..., None]
+        isotropic = self.isotropic(self.gtab).fit(flat_data)
+        flat_params = np.zeros((flat_data.shape[0],
+                                self.design_matrix.shape[-1]))
+
+        for vox, vox_data in enumerate(flat_S):
+            if np.any(~np.isfinite(vox_data)) or np.all(vox_data==0) :
+                # In voxels in which S0 is 0, we just want to keep the
+                # parameters at all-zeros, and avoid nasty sklearn errors:
+                break
+
+            fit_it = vox_data - isotropic.predict()[vox]
+            flat_params[vox] = self.solver.fit(self.design_matrix * weight,
+                                               fit_it * weight.squeeze()).coef_
+        if mask is None:
+            out_shape = data.shape[:-1] + (-1, )
+            beta = flat_params.reshape(out_shape)
+            S0 = flat_S0.reshape(out_shape).squeeze()
+        else:
+            beta = np.zeros(data.shape[:-1] +
+                            (self.design_matrix.shape[-1],))
+            beta[mask, :] = flat_params
+            S0 = np.zeros(data.shape[:-1])
+            S0[mask] = flat_S0
+
+        sf_fit = sfm.SparseFascicleFit(self, beta, S0, isotropic)
         return Fit(sf_fit, te_params)
+    
+    
         
         
 class Fit(sfm.SparseFascicleFit):
     def __init__(self, sf_fit, te_params):
+        
+        
         self.model = sf_fit.model
         self.beta = sf_fit.beta
         self.S0 = sf_fit.S0
@@ -247,6 +216,13 @@ class Fit(sfm.SparseFascicleFit):
         else:
             _matrix = sfm_design_matrix(gtab, self.model.sphere, responses)
             #_matrix = shore_design_matrix(40, 2000, gtab)
+        
+        # weight each row by relative TE
+        #weight = np.exp(np.polyval(self.te_params,
+        #                           TE[~gtab.b0s_mask, None]))
+        #weight = weight / np.sum(weight)
+        #_matrix = _matrix * weight
+        
         # Get them all at once:
         beta_all = self.beta.reshape(-1, self.beta.shape[-1])
         pred_weighted = np.dot(_matrix, beta_all.T).T
