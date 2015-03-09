@@ -91,7 +91,7 @@ class Model(sfm.SparseFascicleModel):
                                  responses=my_responses)
         #return shore_design_matrix(40, 2000, self.gtab)
         
-    def fit(self, data, TE=None, te_order=3, mask=None):
+    def fit(self, data, TE, G, te_order=3, mask=None):
         """
         Fit the SparseFascicleModel object to data
 
@@ -123,20 +123,18 @@ class Model(sfm.SparseFascicleModel):
             this_te = TE[ii]
             te_idx = (TE==this_te)
             this_s0 = data[te_idx * self.gtab.b0s_mask]
-            # Make sure that signals are no higher than their relevant S0 (the
-            # ones with the corresponding TE). If they are, correct them:
-            #if data[ii] > stats.scoreatpercentile(this_s0, 86):
-            #    print("this!")
-            #    data[ii] = stats.scoreatpercentile(this_s0, 86)
             te_est = np.exp(np.polyval(te_params, this_te))
             data_no_te[ii] = data[ii] / te_est
         
-        # weight each row by relative TE
+        # weight each row by relative TE and G:
         weight = np.exp(np.polyval(te_params, TE[~self.gtab.b0s_mask, None]))
         weight = weight / np.sum(weight)
-        self.weight = weight
-        data = data_no_te        
-
+        weight = weight / np.max(weight)
+        weight = weight + (1/(G[~self.gtab.b0s_mask, None]/300.))
+        weight = weight / np.max(weight)
+        data = data_no_te
+        # Or just set the weights to be uniform:
+        # weight = np.ones_like(weight)
         if mask is None:
             flat_data = np.reshape(data, (-1, data.shape[-1]))
         else:

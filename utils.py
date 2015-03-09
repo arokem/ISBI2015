@@ -8,7 +8,7 @@ try:
 except ImportError:
     have_ipython = False
 
-def b_value(g, delta, Delta, gamma=42.576):
+def b_value(g, delta, Delta, gamma=42.576, slew_rate=None):#6.4e-8):
     """ 
     Calculate the b value
     
@@ -18,12 +18,20 @@ def b_value(g, delta, Delta, gamma=42.576):
     delta : gradient duration
     Delta : diffusion duration
     gamma : the gyromagnetic ration (42.576 MHz/T for Hydrogen)
+    slew_rate: the time it takes to crank the gradients up.
     
     """
     G = g*1e-3*1e-6 #convert to T/um
     gamma = 2*np.pi*gamma*1e6*1e-3 # convert to 1/ms/T (Hz = cycles/sec, 
-                                   # 1 cycle = 2pi = 2pi/sec) 
-    b = gamma ** 2 * G ** 2 * delta ** 2 * (Delta-delta/3) # msec/um^2   
+                                   # 1 cycle = 2pi = 2pi/sec)
+    if slew_rate is None:
+        rise_time = 0
+    else:
+        rise_time = G / slew_rate
+
+    b = (gamma ** 2 * G ** 2 * (delta ** 2 * (Delta-delta/3) 
+    + ((1/30.)*(rise_time**3)) - ((1/6.)*delta*rise_time**2))) # msec/um^2
+
     return 1000 * b #s/mm^2
 
 
@@ -60,8 +68,10 @@ def ADC(data, gtab, TE):
 def LSE(prediction, signal, sigma=8):
     return np.mean(((prediction - np.sqrt(signal**2 + sigma**2))**2)/(sigma**2))
 
+
 def RMSE(prediction, signal):
     return np.sqrt(np.mean((prediction - signal)**2))
+
 
 def create_shells(): 
     # Dataset structure:
