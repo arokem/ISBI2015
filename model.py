@@ -10,8 +10,8 @@ import scipy.stats as stats
 
 my_responses = []
 
-for ad in np.arange(0.001, 0.0018, 0.0005):
-    for rd in np.arange(0, ad, 0.0005):
+for ad in np.arange(0.0001, 0.0018, 0.0002):
+    for rd in np.arange(0, ad, 0.0002):
         this_response = [ad, rd, rd]
         my_responses.append(this_response)
 
@@ -80,6 +80,7 @@ def sfm_design_matrix(gtab, sphere, responses=my_responses):
         for response in responses :
             dm.append(sfm.sfm_design_matrix(gtab, sphere, response,
                                             'signal'))
+
         return np.concatenate(dm, -1)
 
 
@@ -247,6 +248,8 @@ class Fit(sfm.SparseFascicleFit):
             te_est = np.exp(np.polyval(self.te_params, this_te))
             predict_with_te[ii] = pred_sig[ii] * te_est
 
+        # MRI is non-negative:
+        predict_with_te[predict_with_te<0] = 0
         return predict_with_te
 
 
