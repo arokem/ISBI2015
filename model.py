@@ -214,14 +214,7 @@ class Fit(sfm.SparseFascicleFit):
         # (which sets the width of our design matrix):
         else:
             _matrix = sfm_design_matrix(gtab, self.model.sphere, responses)
-            #_matrix = shore_design_matrix(40, 2000, gtab)
-        
-        # weight each row by relative TE
-        #weight = np.exp(np.polyval(self.te_params,
-        #                           TE[~gtab.b0s_mask, None]))
-        #weight = weight / np.sum(weight)
-        #_matrix = _matrix * weight
-        
+                
         # Get them all at once:
         beta_all = self.beta.reshape(-1, self.beta.shape[-1])
         pred_weighted = np.dot(_matrix, beta_all.T).T
