@@ -10,8 +10,8 @@ import scipy.stats as stats
 
 my_responses = []
 
-for ad in np.arange(0.001, 0.0018, 0.0005):
-    for rd in np.arange(0, ad, 0.0005):
+for ad in np.arange(0.0001, 0.0018, 0.0002):
+    for rd in np.arange(0, ad, 0.0002):
         this_response = [ad, rd, rd]
         my_responses.append(this_response)
 
@@ -22,12 +22,15 @@ class BiExponentialIsotropicModel(sfm.IsotropicModel):
         noise = parameter[0]
         alpha_1 = parameter[1]
         alpha_2 = parameter[2]
-        tensor_1 = parameter[3]
-        tensor_2 = parameter[4]
+        alpha_3 = parameter[3]
+        tensor_1 = parameter[4]
+        tensor_2 = parameter[5]
+        tensor_3 = parameter[6]
         
         y = (noise +
              alpha_1 * np.exp(-bvals*tensor_1) +
-             alpha_2 * np.exp(-bvals*tensor_2))
+             alpha_2 * np.exp(-bvals*tensor_2) +
+             alpha_3 * np.exp(-bvals*tensor_3))
         residuals = data - y
         return residuals
     
@@ -44,12 +47,14 @@ class BiExponentialIsotropicModel(sfm.IsotropicModel):
         else:
             to_fit = data_no_b0
     
-        start_params = np.ones((n_vox, 5))
-        start_params[:,0] *= 0.0
-        start_params[:,1] *= 0.8
-        start_params[:,2] *= 0.2
-        start_params[:,3] *= 0.001
-        start_params[:,4] *= 0.0002
+        start_params = np.ones((n_vox, 7))
+        start_params[:,0] *= 0.1
+        start_params[:,1] *= 0.3
+        start_params[:,2] *= 0.3
+        start_params[:,3] *= 0.3
+        start_params[:,4] *= 0.002
+        start_params[:,5] *= 0.001
+        start_params[:,6] *= 0.0002
         
         params, status = opt.leastsq(self._nlls_err_func,
                                      start_params,
@@ -66,12 +71,15 @@ class BiExponentialIsotropicFit(sfm.IsotropicFit):
         noise = self.params[0]
         alpha_1 = self.params[1]
         alpha_2 = self.params[2]
-        tensor_1 = self.params[3]
-        tensor_2 = self.params[4]    
+        alpha_3 = self.params[3]
+        tensor_1 = self.params[4]
+        tensor_2 = self.params[5]
+        tensor_3 = self.params[6]
             
         y = (noise +
-             alpha_1*np.exp(-bvals*tensor_1) +
-             alpha_2*np.exp(-bvals*tensor_2))    
+             alpha_1 * np.exp(-bvals*tensor_1) +
+             alpha_2 * np.exp(-bvals*tensor_2) +
+             alpha_3 * np.exp(-bvals*tensor_3))  
         return y
 
 
@@ -80,6 +88,7 @@ def sfm_design_matrix(gtab, sphere, responses=my_responses):
         for response in responses :
             dm.append(sfm.sfm_design_matrix(gtab, sphere, response,
                                             'signal'))
+
         return np.concatenate(dm, -1)
 
 
@@ -91,7 +100,7 @@ class Model(sfm.SparseFascicleModel):
                                  responses=my_responses)
         #return shore_design_matrix(40, 2000, self.gtab)
         
-    def fit(self, data, TE=None, te_order=3, mask=None):
+    def fit(self, data, TE, G, te_order=3, mask=None):
         """
         Fit the SparseFascicleModel object to data
 
@@ -116,27 +125,24 @@ class Model(sfm.SparseFascicleModel):
         """
         
         te_params = np.polyfit(TE[..., self.gtab.b0s_mask],
-                               np.log(data[..., self.gtab.b0s_mask]), te_order)
-
+                               np.log(data[..., self.gtab.b0s_mask]), te_order) 
+        
         data_no_te = np.zeros_like(data)
         for ii in range(data_no_te.shape[0]):
             this_te = TE[ii]
             te_idx = (TE==this_te)
-            this_s0 = data[te_idx * self.gtab.b0s_mask]
-            # Make sure that signals are no higher than their relevant S0 (the
-            # ones with the corresponding TE). If they are, correct them:
-            #if data[ii] > stats.scoreatpercentile(this_s0, 86):
-            #    print("this!")
-            #    data[ii] = stats.scoreatpercentile(this_s0, 86)
             te_est = np.exp(np.polyval(te_params, this_te))
             data_no_te[ii] = data[ii] / te_est
         
-        # weight each row by relative TE
+        # weight each row by relative TE and G:
         weight = np.exp(np.polyval(te_params, TE[~self.gtab.b0s_mask, None]))
         weight = weight / np.sum(weight)
-        self.weight = weight
-        data = data_no_te        
-
+        weight = weight / np.max(weight)
+        weight = weight + (1/(G[~self.gtab.b0s_mask, None]/300.))
+        weight = weight / np.max(weight)
+        data = data_no_te
+        # Or just set the weights to be uniform:
+        # weight = np.ones_like(weight)
         if mask is None:
             flat_data = np.reshape(data, (-1, data.shape[-1]))
         else:
@@ -217,6 +223,7 @@ class Fit(sfm.SparseFascicleFit):
             _matrix = sfm_design_matrix(gtab, self.model.sphere, responses)
             #_matrix = shore_design_matrix(40, 2000, gtab)
         
+        
         # weight each row by relative TE
         #weight = np.exp(np.polyval(self.te_params,
         #                           TE[~gtab.b0s_mask, None]))
@@ -234,13 +241,16 @@ class Fit(sfm.SparseFascicleFit):
         if isinstance(S0, np.ndarray):
             S0 = S0[..., None]
 
+            
+        
+            
         iso_signal = self.iso.predict(gtab)
 
-        pre_pred_sig = S0 * (pred_weighted +
-                             iso_signal.reshape(pred_weighted.shape))
+        pre_pred_sig = (pred_weighted +
+                        iso_signal.reshape(pred_weighted.shape))
         pred_sig = np.zeros(pre_pred_sig.shape[:-1] + (gtab.bvals.shape[0],))
         pred_sig[..., ~gtab.b0s_mask] = pre_pred_sig
-        pred_sig[..., gtab.b0s_mask] = S0
+        pred_sig[..., gtab.b0s_mask] = 1.0
 
         predict_with_te = np.zeros_like(pred_sig)
         for ii in range(predict_with_te.shape[0]):
@@ -249,6 +259,8 @@ class Fit(sfm.SparseFascicleFit):
             te_est = np.exp(np.polyval(self.te_params, this_te))
             predict_with_te[ii] = pred_sig[ii] * te_est
 
+        # MRI is non-negative:
+        predict_with_te[predict_with_te<0] = 0
         return predict_with_te
 
 

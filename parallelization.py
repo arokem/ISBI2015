@@ -52,8 +52,8 @@ class parallelization():
                 time_remaining_pessimistic = t_delta/percentage_pessimistic*(100.0-percentage_pessimistic)/60.0
                 time_remaining = (time_remaining_optimistic + 4.0*time_remaining_realistic + time_remaining_pessimistic)/6.0 
     
-                #sys.stdout.write('{:3.0f}%  {:8.2f}min remaining\n'.format(percentage_realistic, time_remaining))
-                self.pbar.animate_ipython(np.int(percentage_realistic))
+                sys.stdout.write('{:3.0f}%  {:8.2f}min remaining\n'.format(percentage_realistic, time_remaining))
+                #self.pbar.animate_ipython(np.int(percentage_realistic))
     
             params = ()
             for param in args:
@@ -121,7 +121,7 @@ class parallelization():
         processes = []
 
         print 'Parallelization starts on', self.number_of_cores, 'CPUs.'
-        self.pbar = utils.ProgressBar(iterations=100, msg='Progress')
+        #self.pbar = utils.ProgressBar(iterations=100, msg='Progress')
         
         for i in range(self.number_of_cores):
             self.calculations[i] = 0
@@ -139,8 +139,8 @@ class parallelization():
         for i in range(self.number_of_cores):
             processes[i].join()
 
-        #sys.stdout.write('{:3.0f}%  {:8.2f}min remaining\n'.format(100.0, 0.0))
-        self.pbar.animate_ipython(100)
+        sys.stdout.write('{:3.0f}%  {:8.2f}min remaining\n'.format(100.0, 0.0))
+        #self.pbar.animate_ipython(100)
         sys.stdout.write('\nTotal Time needed: {:4.2f}min\n'.format(((time.time() - self.starting_time)/60.0)))
     
         return return_values
