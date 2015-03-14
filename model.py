@@ -35,11 +35,7 @@ class BiExponentialIsotropicModel(sfm.IsotropicModel):
         return residuals
     
     def fit(self, data):
-        if len(data.shape) == 1:
-            n_vox = 1
-        else:
-            n_vox = data.shape[0]
-
+        data = np.reshape(data, (-1, data.shape[-1]))
         data_no_b0 = data[..., ~self.gtab.b0s_mask]
         if np.sum(self.gtab.b0s_mask) > 0:
             s0 = np.mean(data[..., self.gtab.b0s_mask], -1)
@@ -47,7 +43,7 @@ class BiExponentialIsotropicModel(sfm.IsotropicModel):
         else:
             to_fit = data_no_b0
     
-        start_params = np.ones((n_vox, 7))
+        start_params = np.ones((data.shape[0], 7))
         start_params[:,0] *= 0.1
         start_params[:,1] *= 0.3
         start_params[:,2] *= 0.3
@@ -60,7 +56,7 @@ class BiExponentialIsotropicModel(sfm.IsotropicModel):
                                      start_params,
                                      args=(to_fit.squeeze()))
         
-        return BiExponentialIsotropicFit(self, params, n_vox)
+        return BiExponentialIsotropicFit(self, params)
 
 class BiExponentialIsotropicFit(sfm.IsotropicFit):
     def predict(self, gtab=None):
