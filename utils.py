@@ -99,6 +99,49 @@ def create_shells():
     shell_mask = {}
     for j in range(0, len(te_unique)):
         shell_mask[j] = {}
+#        shell_mask[j][0] = np.logical_and(te_unique_mask==j, gtab.b0s_mask)
+
+    te_counter = np.zeros(len(te_unique)).astype(int)
+    for i in range(1, len(bvals_unique)): # for every shell besides b0-shell
+        for j in range(0, len(te_unique)): # look at TE's
+            # and find the belonging one
+            if np.any(np.logical_and(te_unique_mask==j, shell==i) == True):
+                b0s_te = np.logical_and(te_unique_mask==j, gtab.b0s_mask)
+                b0s_shell_and_te = np.asarray(np.nonzero(b0s_te)).squeeze()[range(te_counter[j]*10, (te_counter[j]+1)*10)]
+                b0s_bool = np.zeros(b0s_te.shape).astype(bool)
+                b0s_bool[b0s_shell_and_te] = True
+                shell_mask[j][te_counter[j]] = np.logical_or(shell==i, b0s_bool)
+                te_counter[j] += 1
+                
+    return shell_mask
+
+'''
+def create_shells(): 
+    # Dataset structure:
+    # -----------------
+    # 6 voxels a 3311 signals
+    # in total 33 shells 
+    # each shell consists of 2*45 antipodal DWI measurements
+    # a quadrupel of 3 bvals has the same TE
+    # this quadrupel hast 31 b0s
+
+    # Read data
+    data_dict = read_data()
+    bvals = data_dict['seen']['bvals']
+    bvecs = data_dict['seen']['bvecs']
+    delta = data_dict['seen']['delta']
+    Delta = data_dict['seen']['Delta']
+    te = data_dict['seen']['TE']
+    gtab = grad.gradient_table(bvals, bvecs, big_delta=Delta, small_delta=delta)
+
+    # Categorise data into Shells and TE Quadrupel
+    bvals_unique, shell  = np.unique(bvals, return_inverse=True)
+    te_unique, te_unique_mask  = np.unique(te, return_inverse=True)
+
+    # First entry for each quadrupel should be the b0s related to this TE
+    shell_mask = {}
+    for j in range(0, len(te_unique)):
+        shell_mask[j] = {}
         shell_mask[j][0] = np.logical_and(te_unique_mask==j, gtab.b0s_mask)
 
     te_counter = np.ones(len(te_unique)).astype(int)
@@ -110,6 +153,7 @@ def create_shells():
                 te_counter[j] += 1
                 
     return shell_mask
+'''
 
 class ProgressBar:
     def __init__(self, iterations, msg = None):

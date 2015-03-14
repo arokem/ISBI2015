@@ -22,12 +22,15 @@ class BiExponentialIsotropicModel(sfm.IsotropicModel):
         noise = parameter[0]
         alpha_1 = parameter[1]
         alpha_2 = parameter[2]
-        tensor_1 = parameter[3]
-        tensor_2 = parameter[4]
+        alpha_3 = parameter[3]
+        tensor_1 = parameter[4]
+        tensor_2 = parameter[5]
+        tensor_3 = parameter[6]
         
         y = (noise +
              alpha_1 * np.exp(-bvals*tensor_1) +
-             alpha_2 * np.exp(-bvals*tensor_2))
+             alpha_2 * np.exp(-bvals*tensor_2) +
+             alpha_3 * np.exp(-bvals*tensor_3))
         residuals = data - y
         return residuals
     
@@ -44,12 +47,14 @@ class BiExponentialIsotropicModel(sfm.IsotropicModel):
         else:
             to_fit = data_no_b0
     
-        start_params = np.ones((n_vox, 5))
-        start_params[:,0] *= 0.0
-        start_params[:,1] *= 0.8
-        start_params[:,2] *= 0.2
-        start_params[:,3] *= 0.001
-        start_params[:,4] *= 0.0002
+        start_params = np.ones((n_vox, 7))
+        start_params[:,0] *= 0.1
+        start_params[:,1] *= 0.3
+        start_params[:,2] *= 0.3
+        start_params[:,3] *= 0.3
+        start_params[:,4] *= 0.002
+        start_params[:,5] *= 0.001
+        start_params[:,6] *= 0.0002
         
         params, status = opt.leastsq(self._nlls_err_func,
                                      start_params,
@@ -66,12 +71,15 @@ class BiExponentialIsotropicFit(sfm.IsotropicFit):
         noise = self.params[0]
         alpha_1 = self.params[1]
         alpha_2 = self.params[2]
-        tensor_1 = self.params[3]
-        tensor_2 = self.params[4]    
+        alpha_3 = self.params[3]
+        tensor_1 = self.params[4]
+        tensor_2 = self.params[5]
+        tensor_3 = self.params[6]
             
         y = (noise +
-             alpha_1*np.exp(-bvals*tensor_1) +
-             alpha_2*np.exp(-bvals*tensor_2))    
+             alpha_1 * np.exp(-bvals*tensor_1) +
+             alpha_2 * np.exp(-bvals*tensor_2) +
+             alpha_3 * np.exp(-bvals*tensor_3))  
         return y
 
 
@@ -117,13 +125,12 @@ class Model(sfm.SparseFascicleModel):
         """
         
         te_params = np.polyfit(TE[..., self.gtab.b0s_mask],
-                               np.log(data[..., self.gtab.b0s_mask]), te_order)
-
+                               np.log(data[..., self.gtab.b0s_mask]), te_order) 
+        
         data_no_te = np.zeros_like(data)
         for ii in range(data_no_te.shape[0]):
             this_te = TE[ii]
             te_idx = (TE==this_te)
-            this_s0 = data[te_idx * self.gtab.b0s_mask]
             te_est = np.exp(np.polyval(te_params, this_te))
             data_no_te[ii] = data[ii] / te_est
         
@@ -214,7 +221,15 @@ class Fit(sfm.SparseFascicleFit):
         # (which sets the width of our design matrix):
         else:
             _matrix = sfm_design_matrix(gtab, self.model.sphere, responses)
-                
+            #_matrix = shore_design_matrix(40, 2000, gtab)
+        
+        
+        # weight each row by relative TE
+        #weight = np.exp(np.polyval(self.te_params,
+        #                           TE[~gtab.b0s_mask, None]))
+        #weight = weight / np.sum(weight)
+        #_matrix = _matrix * weight
+        
         # Get them all at once:
         beta_all = self.beta.reshape(-1, self.beta.shape[-1])
         pred_weighted = np.dot(_matrix, beta_all.T).T
@@ -226,13 +241,16 @@ class Fit(sfm.SparseFascicleFit):
         if isinstance(S0, np.ndarray):
             S0 = S0[..., None]
 
+            
+        
+            
         iso_signal = self.iso.predict(gtab)
 
-        pre_pred_sig = S0 * (pred_weighted +
-                             iso_signal.reshape(pred_weighted.shape))
+        pre_pred_sig = (pred_weighted +
+                        iso_signal.reshape(pred_weighted.shape))
         pred_sig = np.zeros(pre_pred_sig.shape[:-1] + (gtab.bvals.shape[0],))
         pred_sig[..., ~gtab.b0s_mask] = pre_pred_sig
-        pred_sig[..., gtab.b0s_mask] = S0
+        pred_sig[..., gtab.b0s_mask] = 1.0
 
         predict_with_te = np.zeros_like(pred_sig)
         for ii in range(predict_with_te.shape[0]):
