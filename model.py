@@ -22,15 +22,12 @@ class BiExponentialIsotropicModel(sfm.IsotropicModel):
         noise = parameter[0]
         alpha_1 = parameter[1]
         alpha_2 = parameter[2]
-        alpha_3 = parameter[3]
-        tensor_1 = parameter[4]
-        tensor_2 = parameter[5]
-        tensor_3 = parameter[6]
+        tensor_1 = parameter[3]
+        tensor_2 = parameter[4]
         
         y = (noise +
              alpha_1 * np.exp(-bvals*tensor_1) +
-             alpha_2 * np.exp(-bvals*tensor_2) +
-             alpha_3 * np.exp(-bvals*tensor_3))
+             alpha_2 * np.exp(-bvals*tensor_2))
         residuals = data - y
         return residuals
     
@@ -43,14 +40,12 @@ class BiExponentialIsotropicModel(sfm.IsotropicModel):
         else:
             to_fit = data_no_b0
     
-        start_params = np.ones((data.shape[0], 7))
+        start_params = np.ones((n_vox, 5))
         start_params[:,0] *= 0.1
-        start_params[:,1] *= 0.3
-        start_params[:,2] *= 0.3
-        start_params[:,3] *= 0.3
-        start_params[:,4] *= 0.002
-        start_params[:,5] *= 0.001
-        start_params[:,6] *= 0.0002
+        start_params[:,1] *= 0.4
+        start_params[:,2] *= 0.4
+        start_params[:,3] *= 0.002
+        start_params[:,4] *= 0.0002
         
         params, status = opt.leastsq(self._nlls_err_func,
                                      start_params,
@@ -67,15 +62,12 @@ class BiExponentialIsotropicFit(sfm.IsotropicFit):
         noise = self.params[0]
         alpha_1 = self.params[1]
         alpha_2 = self.params[2]
-        alpha_3 = self.params[3]
-        tensor_1 = self.params[4]
-        tensor_2 = self.params[5]
-        tensor_3 = self.params[6]
+        tensor_1 = self.params[3]
+        tensor_2 = self.params[4]
             
         y = (noise +
              alpha_1 * np.exp(-bvals*tensor_1) +
-             alpha_2 * np.exp(-bvals*tensor_2) +
-             alpha_3 * np.exp(-bvals*tensor_3))  
+             alpha_2 * np.exp(-bvals*tensor_2))  
         return y
 
 
@@ -122,13 +114,22 @@ class Model(sfm.SparseFascicleModel):
         
         te_params = np.polyfit(TE[..., self.gtab.b0s_mask],
                                np.log(data[..., self.gtab.b0s_mask]), te_order) 
-        
+        te_dict = {}
         data_no_te = np.zeros_like(data)
         for ii in range(data_no_te.shape[0]):
             this_te = TE[ii]
             te_idx = (TE==this_te)
             te_est = np.exp(np.polyval(te_params, this_te))
+            
+            tes_est = np.median(data[te_idx * self.gtab.b0s_mask])
+            te_est = tes_est
+            te_dict[this_te] = tes_est
+            
             data_no_te[ii] = data[ii] / te_est
+            
+            
+            
+            
         
         # weight each row by relative TE and G:
         weight = np.exp(np.polyval(te_params, TE[~self.gtab.b0s_mask, None]))
@@ -173,13 +174,13 @@ class Model(sfm.SparseFascicleModel):
             S0[mask] = flat_S0
 
         sf_fit = sfm.SparseFascicleFit(self, beta, S0, isotropic)
-        return Fit(sf_fit, te_params)
+        return Fit(sf_fit, te_params, te_dict)
     
     
         
         
 class Fit(sfm.SparseFascicleFit):
-    def __init__(self, sf_fit, te_params):
+    def __init__(self, sf_fit, te_params, te_dict):
         
         
         self.model = sf_fit.model
@@ -187,6 +188,7 @@ class Fit(sfm.SparseFascicleFit):
         self.S0 = sf_fit.S0
         self.iso = sf_fit.iso
         self.te_params = te_params
+        self.te_dict = te_dict
 
         
     def predict(self, gtab, TE, responses=my_responses, S0=None):
@@ -252,7 +254,10 @@ class Fit(sfm.SparseFascicleFit):
         for ii in range(predict_with_te.shape[0]):
             this_te = TE[ii]
             te_idx = (TE==this_te)
-            te_est = np.exp(np.polyval(self.te_params, this_te))
+            #te_est = np.exp(np.polyval(self.te_params, this_te))
+            
+            te_est = self.te_dict[this_te]
+            
             predict_with_te[ii] = pred_sig[ii] * te_est
 
         # MRI is non-negative:

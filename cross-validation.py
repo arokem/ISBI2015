@@ -24,7 +24,7 @@ import sklearn.linear_model as lm
 
 # In[2]:
 
-version = '6'
+version = '7_3'
 
 
 # In[3]:
@@ -46,7 +46,7 @@ te = data_dict['seen']['TE']
 g = data_dict['seen']['g']
 
 
-# In[5]:
+# In[8]:
 
 data_seen = []
 data_unseen = []
@@ -108,10 +108,14 @@ l1_ratios = [0.25, 0.3, 0.35]
 # Version 5
 alphas = [5e-6, 5e-7, 5e-8, 5e-9]
 l1_ratios = [0.35, 0.4, 0.45]
-'''
+
 # Version 6
 alphas = [1e-6, 5e-7, 1e-7]
 l1_ratios = [0.375, 0.4, 0.425]
+'''
+# Version 7
+alphas = [5e-7]
+l1_ratios = [0.4]
 
 
 # In[8]:

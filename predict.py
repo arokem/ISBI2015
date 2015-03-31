@@ -21,7 +21,7 @@ import sklearn.linear_model as lm
 
 # In[2]:
 
-version = 'final2'
+version = 'final3'
 
 
 # In[3]:
