@@ -3,7 +3,7 @@
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="chrome=1">
-    <title>Isbi2015 by arokem</title>
+    <title>A restriction spectrum sparse fascicle model (RS-SFM) for diffusion MRI </title>
 
     <link rel="stylesheet" href="stylesheets/styles.css">
     <link rel="stylesheet" href="stylesheets/pygment_trac.css">
@@ -15,8 +15,10 @@
   <body>
     <div class="wrapper">
       <header>
-        <h1>Isbi2015</h1>
-        <p></p>
+        <h1>A restriction spectrum sparse fascicle model (RS-SFM) for diffusion MRI
+</h1>
+<h2>Ariel Rokem, Christian Pötter, Robert F. Dougherty</h2>
+      <h2>Center for Cognitive and Neurobiological Imaging, Stanford University</h2><p></p>
 
         <p class="view"><a href="https://github.com/arokem/ISBI2015">View the Project on GitHub <small>arokem/ISBI2015</small></a></p>
 
@@ -29,43 +31,70 @@
       </header>
       <section>
         <h3>
-<a id="welcome-to-github-pages" class="anchor" href="#welcome-to-github-pages" aria-hidden="true"><span class="octicon octicon-link"></span></a>Welcome to GitHub Pages.</h3>
+<a id="Abstract" class="anchor" href="#abstract" aria-hidden="true"><span class="octicon octicon-link"></span></a>Abstract</h3>
 
-<p>This automatic page generator is the easiest way to create beautiful pages for all of your projects. Author your page content here using GitHub Flavored Markdown, select a template crafted by a designer, and publish. After your page is generated, you can check out the new branch:</p>
+The Sparse Fascicle Model (SFM [1]) is a member of the large family of models
+that account for the diffusion MRI signal in the white matter as a combination
+of signals due to compartments corresponding to different axonal fiber
+populations (fascicles), and other parts of the tissue.  The model proceeds in
+two steps. First, an isotropic component is fit. We model the effects of both
+the measurement echo time (TE), as well as the measurement b-value on the
+signal. These are fit as a log(TE)-dependent decay with a low order polynomial
+function, and a b-value-dependent multi-exponential decay (including also an
+offset to account for the Rician noise floor). The residuals from the isotropic
+component are then deconvolved with the perturbations in the signal due to a
+set of fascicle kernels each modeled as a radially symmetric (λ2=λ3) diffusion
+tensor. The putative kernels are distributed in a dense sampling grid on the
+sphere. Furthermore, Restriction Spectrum Imaging (RSI [2]) is used to extend
+the model, by adding a range of fascicle kernels in each sampling point, with
+different axial and radial diffusivities, capturing diffusion at different
+scales. To restrict the number of anisotropic components (fascicles) in each
+voxel, and to prevent overfitting, the RS-SFM model employs the Elastic Net
+algorithm (EN [3]), which applies a tunable combination of L1 and L2
+regularization on the weights of the fascicle kernels. We used elements of the
+SFM implemented in the <a href="http://dipy.org">dipy software library </a> [4]
+and the EN implemented in <a href="http://scikit-learn.org/"> scikit-learn </a> [5]. In addition, to account for
+differences in SNR, we implemented a weighted least-squares strategy whereby
+each signal’s contribution to the fit was weighted by its TE, as well as the
+gradient strength used. EN has two tuning parameters determining: 1) the ratio
+of L1-to-L2 regularization, and 2) the weight of the regularization relative to
+the least-squares fit to the signal.  To find the proper values of these
+parameters, we employed k-fold cross-validation [1], leaving out one shell of
+measurement in each iteration for cross-validation. We determined that the
+tuning parameters with the lowest LSE [6] provide an almost-even balance of L1
+and L2 penalty with weak overall regularization.  Because of the combination of
+a dense sampling grid (362 points distributed on the sphere), and multiple
+restriction kernels (45 per sampling point), the maximal number of parameters
+for the model is approximately 16300, more than the number of data
+points. However, because regularization is employed, the effective number of
+parameters is much smaller, resulting in an active set of approximately 20
+regressors [7].  <br>
 
-<pre><code>$ cd your_repo_root/repo_name
-$ git fetch origin
-$ git checkout gh-pages
-</code></pre>
+<p>
+<h2>References:</h2>
+[1] Rokem et al. (2015) PLoS 1, in press.
 
-<p>If you're using the GitHub for Mac, simply sync your repository and you'll see the new branch.</p>
+[2] White et al. (2013) HBM 34: 327-346.
 
-<h3>
-<a id="designer-templates" class="anchor" href="#designer-templates" aria-hidden="true"><span class="octicon octicon-link"></span></a>Designer Templates</h3>
+[3] Zou and Hastie (2005) J R Statist Soc B 67:301-320.
 
-<p>We've crafted some handsome templates for you to use. Go ahead and continue to layouts to browse through them. You can easily go back to edit your page before publishing. After publishing your page, you can revisit the page generator and switch to another theme. Your Page content will be preserved if it remained markdown format.</p>
+[4] Garyfallidis et al. (2014). Front Neuroinf 8:8
 
-<h3>
-<a id="rather-drive-stick" class="anchor" href="#rather-drive-stick" aria-hidden="true"><span class="octicon octicon-link"></span></a>Rather Drive Stick?</h3>
+[5] Pedregosa et al. (2011) JMLR: 12: 2825-30
 
-<p>If you prefer to not use the automatic generator, push a branch named <code>gh-pages</code> to your repository to create a page manually. In addition to supporting regular HTML content, GitHub Pages support Jekyll, a simple, blog aware static site generator written by our own Tom Preston-Werner. Jekyll makes it easy to create site-wide headers and footers without having to copy them across every page. It also offers intelligent blog support and other advanced templating features.</p>
+[6] Panagiotaki et al. (2012) Neuroimage 59: 2241-2254.
 
-<h3>
-<a id="authors-and-contributors" class="anchor" href="#authors-and-contributors" aria-hidden="true"><span class="octicon octicon-link"></span></a>Authors and Contributors</h3>
+[7] Zou et al. (2007). Ann Statist. 35: 2173-2192.  
 
-<p>You can <a href="https://github.com/blog/821" class="user-mention">@mention</a> a GitHub username to generate a link to their profile. The resulting <code>&lt;a&gt;</code> element will link to the contributor's GitHub Profile. For example: In 2007, Chris Wanstrath (<a href="https://github.com/defunkt" class="user-mention">@defunkt</a>), PJ Hyett (<a href="https://github.com/pjhyett" class="user-mention">@pjhyett</a>), and Tom Preston-Werner (<a href="https://github.com/mojombo" class="user-mention">@mojombo</a>) founded GitHub.</p>
+<p>
+<h2>Examples: </h2>
 
-<h3>
-<a id="support-or-contact" class="anchor" href="#support-or-contact" aria-hidden="true"><span class="octicon octicon-link"></span></a>Support or Contact</h3>
 
-<p>Having trouble with Pages? Check out the documentation at <a href="https://help.github.com/pages">https://help.github.com/pages</a> or contact <a href="mailto:support@github.com">support@github.com</a> and we’ll help you sort it out.</p>
-      </section>
-      <footer>
-        <p>This project is maintained by <a href="https://github.com/arokem">arokem</a></p>
-        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
-      </footer>
-    </div>
-    <script src="javascripts/scale.fix.js"></script>
-    
+
+</div>
+
+
+<script src="javascripts/scale.fix.js"></script>
+ 
   </body>
 </html>
