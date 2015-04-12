@@ -120,7 +120,7 @@ class parallelization():
         q = Queue()
         processes = []
 
-        print 'Parallelization starts on', self.number_of_cores, 'CPUs.'
+        print('Parallelization starts on ' + str(self.number_of_cores) + ' CPUs.')
         #self.pbar = utils.ProgressBar(iterations=100, msg='Progress')
         
         for i in range(self.number_of_cores):
