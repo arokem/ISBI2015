@@ -16,6 +16,12 @@ for ad in np.arange(0.0001, 0.0018, 0.0002):
         my_responses.append(this_response)
 
 class BiExponentialIsotropicModel(sfm.IsotropicModel):
+    """ 
+    Isotropic model with the form: 
+    
+    
+    $S(b) = \beta_1 e^{bD_1} + \beta_2 e^{bD_2} + \epsilon
+    """ 
     def _nlls_err_func(self, parameter, data):
         bvals = self.gtab.bvals[~self.gtab.b0s_mask]
         n = bvals.shape[0]
@@ -40,12 +46,12 @@ class BiExponentialIsotropicModel(sfm.IsotropicModel):
         else:
             to_fit = data_no_b0
     
-        start_params = np.ones((n_vox, 5))
-        start_params[:,0] *= 0.1
-        start_params[:,1] *= 0.4
-        start_params[:,2] *= 0.4
-        start_params[:,3] *= 0.002
-        start_params[:,4] *= 0.0002
+        start_params = np.ones(5)
+        start_params[0] *= 0.1
+        start_params[1] *= 0.4
+        start_params[2] *= 0.4
+        start_params[3] *= 0.002
+        start_params[4] *= 0.0002
         
         params, status = opt.leastsq(self._nlls_err_func,
                                      start_params,

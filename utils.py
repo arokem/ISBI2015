@@ -21,22 +21,24 @@ def b_value(g, delta, Delta, gamma=42.576, slew_rate=None):#6.4e-8):
     slew_rate: the time it takes to crank the gradients up.
     
     """
-    G = g*1e-3*1e-6 #convert to T/um
-    gamma = 2*np.pi*gamma*1e6*1e-3 # convert to 1/ms/T (Hz = cycles/sec, 
-                                   # 1 cycle = 2pi = 2pi/sec)
+    G = g * 1e-3 * 1e-6 #convert to T/um
+    gamma = 2 * np.pi * gamma * 1e6 * 1e-3 # convert to 1/ms/T (Hz = cycles/sec, 
+                                           # 1 cycle = 2pi = 2pi/sec)
     if slew_rate is None:
         rise_time = 0
     else:
         rise_time = G / slew_rate
 
     b = (gamma ** 2 * G ** 2 * (delta ** 2 * (Delta-delta/3) 
-    + ((1/30.)*(rise_time**3)) - ((1/6.)*delta*rise_time**2))) # msec/um^2
+    + ((1 / 30.) * (rise_time**3)) - ((1 / 6.) * delta * rise_time**2))) # msec/um^2  
 
     return 1000 * b #s/mm^2
 
 
 def read_data():
-    
+    """
+    Grab the data from the files
+    """
     data = {}
     for this in ['seen', 'unseen']:
         scheme = np.loadtxt('./%sScheme.txt'%this, skiprows=1)
@@ -54,7 +56,9 @@ def read_data():
     return data
 
 def ADC(data, gtab, TE):
-
+    """
+    Calculate the ADC of each signal, based on the S/T equation
+    """
     norm_sig = np.zeros_like(data)
     for ii in range(norm_sig.shape[0]):
             this_te = TE[ii]
@@ -115,45 +119,6 @@ def create_shells():
                 
     return shell_mask
 
-'''
-def create_shells(): 
-    # Dataset structure:
-    # -----------------
-    # 6 voxels a 3311 signals
-    # in total 33 shells 
-    # each shell consists of 2*45 antipodal DWI measurements
-    # a quadrupel of 3 bvals has the same TE
-    # this quadrupel hast 31 b0s
-
-    # Read data
-    data_dict = read_data()
-    bvals = data_dict['seen']['bvals']
-    bvecs = data_dict['seen']['bvecs']
-    delta = data_dict['seen']['delta']
-    Delta = data_dict['seen']['Delta']
-    te = data_dict['seen']['TE']
-    gtab = grad.gradient_table(bvals, bvecs, big_delta=Delta, small_delta=delta)
-
-    # Categorise data into Shells and TE Quadrupel
-    bvals_unique, shell  = np.unique(bvals, return_inverse=True)
-    te_unique, te_unique_mask  = np.unique(te, return_inverse=True)
-
-    # First entry for each quadrupel should be the b0s related to this TE
-    shell_mask = {}
-    for j in range(0, len(te_unique)):
-        shell_mask[j] = {}
-        shell_mask[j][0] = np.logical_and(te_unique_mask==j, gtab.b0s_mask)
-
-    te_counter = np.ones(len(te_unique)).astype(int)
-    for i in range(1, len(bvals_unique)): # for every shell
-        for j in range(0, len(te_unique)): # look at TE's
-            # and find the belonging one
-            if np.any(np.logical_and(te_unique_mask==j, shell==i) == True):
-                shell_mask[j][te_counter[j]] = shell==i
-                te_counter[j] += 1
-                
-    return shell_mask
-'''
 
 class ProgressBar:
     def __init__(self, iterations, msg = None):
@@ -174,7 +139,7 @@ class ProgressBar:
         except Exception:
             # terminal IPython has no clear_output
             pass
-        print '\r', self,
+        print('\r', self)
         sys.stdout.flush()
         self.update_iteration(iter + 1)
 
