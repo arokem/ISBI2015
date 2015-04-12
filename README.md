@@ -1,8 +1,8 @@
-# A Restriction Spectrum Sparse Fascicle Model
+## A Restriction Spectrum Sparse Fascicle Model for diffusion MRI
 
-## Ariel Rokem, Christian Pötter, Robert F. Dougherty
+### Ariel Rokem, Christian Pötter, Robert F. Dougherty
 
-## Center for Cognitive and Neurobiological Imaging, Stanford University
+### Center for Cognitive and Neurobiological Imaging, Stanford University
 
 A submission to the [ISBI2015 White Matter Challenge](http://biomedicalimaging.org/2015/white-matter-modeling-challenge/).
 
