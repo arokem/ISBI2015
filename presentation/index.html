@@ -3,13 +3,13 @@
 <meta name="viewport" content="width=device-width">
 <style>
 
-@import url(http://fonts.googleapis.com/css?family=PT+Serif|PT+Serif:b|PT+Serif:i);
+@import url(http://fonts.googleapis.com/css?family=Arimo);
 
 section {
   background: #000;
   color: #fff;
   padding: 2em;
-  font-family: Helvetica Neue, Baskerville, Georgia;
+  font-family: Arimo, Baskerville, Georgia;
 }
 
 #follow {
@@ -46,44 +46,58 @@ Center for Cognitive and Neurobiological Imaging, Stanford University<br><small>
 
 </section>
 <section style="padding:2em 5em;">
-<h2>Combines two different ideas:</h2>
-<h3><a href="http://arxiv.org/abs/1411.0721">Sparse Fascicle Model (Rokem et
-al. 2015)</a></h3>
+<h2>RS-SFM Combines two different ideas:</h2>
+<li><h3><a href="http://arxiv.org/abs/1411.0721">Sparse Fascicle Model (Rokem et
+al. 2015)</a></h3></li>
+
+<li><h3><a
+href="http://onlinelibrary.wiley.com/doi/10.1002/hbm.21454/abstract">Restriction
+Spectrum Imaging (White et al. 2013)</a></li></h3><br>
+</section>
+
+<section>
+<center><h3> Sparse Fascicle Model </h3></center>
 <b> <li> The signal is modeled as a combination of tensor response functions: <br>
 <center>
-<img src="./response_func_10.png" alt="Response function" height="120"
+
+<img src="./response_func_50.png" alt="Response function" height="120"
+ width="120">
+<img src="./response_func_40.png" alt="Response function" height="120"
+ width="120">
+<img src="./response_func_30.png" alt="Response function" height="120"
  width="120"> 
 <img src="./response_func_20.png" alt="Response function" height="120"
  width="120"> 
-<img src="./response_func_30.png" alt="Response function" height="120"
+<img src="./response_func_10.png" alt="Response function" height="120"
  width="120"> 
-<img src="./response_func_40.png" alt="Response function" height="120"
- width="120"> 
-<img src="./response_func_50.png" alt="Response function" height="120"
- width="120">
 <large> ... </large>
 </center>
-<br>
-<li> The active set of 'fascicles' is selected using non-negative least-squares
-regression regularized with <bf><a href="http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.ElasticNet.html">Elastic Net</a><br>
-</section>
 
-<section>
-<li> The direction-independent ("isotropic") signal is modeled separately
+<br>
+
+<li> The active set of 'fascicles' is selected using non-negative least-squares
+regression regularized with <bf><a
+href="http://scikit-learn.org/stable/modules/generated/sklearn.linear_model.ElasticNet.html">Elastic
+Net</a>
+
+<br>
+
+<li> The direction-independent ("isotropic") signal is modeled separately as a
+multi-exponential:
 
 $$f(b) = \beta_1 e^{-bD_1} + \beta_2 e^{-bD_2} + \epsilon$$
-<br>
-Where $$\beta_1, \beta_2, D_1, D_2, \epsilon$$
-Are free parameters
-<b>
+
 </section>
 
-<section>
-<li><a
-href="http://onlinelibrary.wiley.com/doi/10.1002/hbm.21454/abstract">Restriction
-Spectrum Imaging (White et al. 2013)</li><br>
 
-The 
+<section>
+
+<center><h3> Restriction Spectrum Imaging  </h3></center>
+
+<li>Each response function is repeated with different restriction profile 
+different restrcition conditions</li>
+
+
 </section>
 
 <section style="padding:5em 5em;">
@@ -91,7 +105,7 @@ The
 
 All the code used to fit the model is available at
 
-<h2><h href="http://arokem.github.io/ISBI2015">http://arokem.github.io/ISBI2015</a><h2>
+<h2><a href="http://arokem.github.io/ISBI2015">http://arokem.github.io/ISBI2015</a><h2>
 </section>
 
 <script src="d3.v3.min.js"></script>
