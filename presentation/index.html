@@ -9,7 +9,7 @@ section {
   background: #000;
   color: #fff;
   padding: 2em;
-  font-family: Arimo, Baskerville, Georgia;
+  font-family: Helvetica Neue, Baskerville, Georgia;
 }
 
 #follow {
@@ -56,21 +56,19 @@ Spectrum Imaging (White et al. 2013)</a></li></h3><br>
 </section>
 
 <section>
-<center><h3> Sparse Fascicle Model </h3></center>
+<center><h3> Sparse Fascicle Model (Rokem et al., 2015) </h3></center>
 <b> <li> The signal is modeled as a combination of tensor response functions: <br>
 <center>
-
-<img src="./response_func_50.png" alt="Response function" height="120"
- width="120">
-<img src="./response_func_40.png" alt="Response function" height="120"
- width="120">
-<img src="./response_func_30.png" alt="Response function" height="120"
- width="120"> 
-<img src="./response_func_20.png" alt="Response function" height="120"
- width="120"> 
-<img src="./response_func_10.png" alt="Response function" height="120"
- width="120"> 
-<large> ... </large>
+<img src="./response_func_50.png" alt="Response function" height="140"
+ width="140">
+<img src="./response_func_40.png" alt="Response function" height="140"
+ width="140">
+<img src="./response_func_30.png" alt="Response function" height="140"
+ width="140"> 
+<img src="./response_func_20.png" alt="Response function" height="140"
+ width="140"> 
+<img src="./response_func_10.png" alt="Response function" height="140"
+ width="140"><xx-large> ... </xx-large>
 </center>
 
 <br>
@@ -91,21 +89,58 @@ $$f(b) = \beta_1 e^{-bD_1} + \beta_2 e^{-bD_2} + \epsilon$$
 
 
 <section>
+<center><h3> Restriction Spectrum Imaging (White et al. 2013) </h3></center>
 
-<center><h3> Restriction Spectrum Imaging  </h3></center>
+<li>Each fascicle is repeated with different combinations of λ<small>1</small>,λ<small>2,3</small></li>
+<center>
+<img src="./response_func_0.0003_0.0001.png" alt="Response function" height="140"
+ width="140">
 
-<li>Each response function is repeated with different restriction profile 
-different restrcition conditions</li>
+<img src="./response_func_0.0008_0.0001.png" alt="Response function" height="140"
+ width="140">
 
+<img src="./response_func_0.0008_0.0006.png" alt="Response function" height="140"
+ width="140">
+
+<img src="./response_func_0.0013_0.0001.png" alt="Response function" height="140"
+ width="140">
+
+<img src="./response_func_0.0013_0.0006.png" alt="Response function" height="140"
+ width="140">
+
+<img src="./response_func_0.0013_0.0011.png" alt="Response function" height="140"
+ width="140">
+
+</center>
+
+<li>Accounts for different restriction conditions within each voxel</li>
+<li>A multi-exponential decay profile for every fascicle </li>
+</section>
+
+<section style="padding:2em 5em;">
+
+<center><img src="./Results.png" alt="Response function" height="545"
+ width="790"></center>
+ $$R^2 = 98.8$$
 
 </section>
 
-<section style="padding:5em 5em;">
-<h3>Reproducible research</h3>
 
+<section style="padding:2em 5em;">
+<h2>Reproducible research</h2>
+<small>"...an article about computational result is advertising, not scholarship. The actual scholarship is the full software environment, code and data, that produced the result..."
+<br>
+<br>
+-- Buckheit and Donoho (1995)
+</small>
+<br>
+<br>
 All the code used to fit the model is available at
 
 <h2><a href="http://arokem.github.io/ISBI2015">http://arokem.github.io/ISBI2015</a><h2>
+
+Example analysis at: <a href="http://nbviewer.ipython.org/github/arokem/ISBI2015/blob/master/RS-SFM-example.ipynb">IPython nbviewer</a>
+
 </section>
 
 <script src="d3.v3.min.js"></script>
