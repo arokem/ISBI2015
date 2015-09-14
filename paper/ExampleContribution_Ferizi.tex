@@ -1,0 +1,60 @@
+\documentclass[3p]{elsarticle}
+
+\usepackage{hyperref}
+
+\journal{NeuroImage}
+
+%%%%%%%%%%%%%%%%%%%%%%%
+%% Elsevier bibliography styles
+%%%%%%%%%%%%%%%%%%%%%%%
+%% To change the style, put a % in front of the second line of the current style and
+%% remove the % from the second line of the style you would like to use.
+%%%%%%%%%%%%%%%%%%%%%%%
+
+%% Numbered
+%\bibliographystyle{model1-num-names}
+
+%% Numbered without titles
+%\bibliographystyle{model1a-num-names}
+
+%% Harvard
+\bibliographystyle{model2-names}
+\biboptions{authoryear}
+
+%% Vancouver numbered
+%\usepackage{numcompress}\bibliographystyle{model3-num-names}
+
+%% Vancouver name/year
+%\usepackage{numcompress}\bibliographystyle{model4-names}\biboptions{authoryear}
+
+%% APA style
+%\bibliographystyle{model5-names}\biboptions{authoryear}
+
+%% AMA style
+%\usepackage{numcompress}\bibliographystyle{model6-num-names}
+
+%% `Elsevier LaTeX' style
+\bibliographystyle{elsarticle-num}
+%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+\section{Models}
+
+\subsection{Ferizi$_1$ and Ferizi$_2$}
+This submission uses two three-compartment models, as described in previous studies \citep{ferizi_mrm,ferizi_miccai}. These models consist of: 1) either a Bingham distribution of sticks or a Cylinder for the intracellular compartment; 2) a diffusion tensor for the extracellular compartment; 3) an isotropic CSF compartment. 
+The T$_2$ relaxation element is fitted beforehand, to the (variable echo time) b=0 measurements. The signal model is:  
+\begin{equation}
+S = \tilde{S_{0}} \left(f_{i}  \exp{(-\frac{TE}{T_2^i})}  S_{i} + f_{e}  \exp{(-\frac{TE}{T_2^e})}  S_{e} + f_{c}  \exp{(-\frac{TE}{T_2^c})}  S_{c}\right)
+\label{eq:modelTE}
+\end{equation}
+where $f_{i}$, $f_{e}$ and $f_{c}$ are the weights of the intracellular, extracellular, and third normalised compartment signals $S_{intra}$, $S_{extra}$ and $S_{c}$, respectively; the values of compartmental $T_2$ are indexed similarly; $\tilde{S_{0}}$ is the proton density signal (which is TE-independent, and obtained from fitting to the b = 0 signal).
+These models, as shown in the figure below,  emerged from previous studies (see references below). Here, however, a single white matter T2 and separate compartmental diffusivities are additionally fitted.
+
+There is a two-stage model fitting procedure. The first step estimates the T2 decay rate of tissue, separately in each voxel, by fitting a bi-exponential model to the b=0 intensity as a function of TE, in which one component is from tissue and the other from CSF. A preliminary analysis of voxels fully inside WM regions shows no significant departure from mono-exponential decay, equal T2 are then assumed within the intra and extracellular compartments. When fitting the bi-exponential model, the value of T2 in CSF is fixed to 1,000ms (a more precise value of CSF is unlikely to be estimated with this protocol). Thus, for each voxel, the volume fraction of CSF, the $\tilde{S_{0}}$ and the T2 of the tissue are estimated. These three estimates are then fixed for all the subsequent model fits. Then, each model is fitted using the Levenberg-Marquardt algorithm with an offset-Gaussian noise model. 
+
+
+\section*{References}
+\bibliography{mybibfile}
+
+\end{document}

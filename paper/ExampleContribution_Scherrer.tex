@@ -1,0 +1,59 @@
+\documentclass[3p]{elsarticle}
+
+\usepackage{hyperref}
+
+\journal{NeuroImage}
+
+%%%%%%%%%%%%%%%%%%%%%%%
+%% Elsevier bibliography styles
+%%%%%%%%%%%%%%%%%%%%%%%
+%% To change the style, put a % in front of the second line of the current style and
+%% remove the % from the second line of the style you would like to use.
+%%%%%%%%%%%%%%%%%%%%%%%
+
+%% Numbered
+%\bibliographystyle{model1-num-names}
+
+%% Numbered without titles
+%\bibliographystyle{model1a-num-names}
+
+%% Harvard
+\bibliographystyle{model2-names}
+\biboptions{authoryear}
+
+%% Vancouver numbered
+%\usepackage{numcompress}\bibliographystyle{model3-num-names}
+
+%% Vancouver name/year
+%\usepackage{numcompress}\bibliographystyle{model4-names}\biboptions{authoryear}
+
+%% APA style
+%\bibliographystyle{model5-names}\biboptions{authoryear}
+
+%% AMA style
+%\usepackage{numcompress}\bibliographystyle{model6-num-names}
+
+%% `Elsevier LaTeX' style
+\bibliographystyle{elsarticle-num}
+%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+
+\section{Models}
+
+\subsection{Scherrer (DIAMOND)} 
+DIAMOND models the set of tissue compartments in each voxel by a finite sum of unimodal continuous distributions of diffusion tensors. This corresponds to an hybrid tissue model that combines biophysical and statistical modeling. 
+As described in \citep{scherrer_mrm2015}, the DW  signal $S_k$ for a gradient vector $\mathbf{g}_k$ and b-value $b_k$ is modeled by: 
+$S_k = S_0 \big[  \sum_{j=0}^{N} f_j  {\left( 1+ \frac{b_k \mathbf{g}_k^T  \mathbf{D}^0_j  \mathbf{g}_k }{\kappa_j}  \right)}^{-\kappa_j} \big]$,
+where $S_0$ is the non-attenuated signal, $N$ is the number of compartments and $\kappa_j$ and $ \mathbf{D}^0_j$ are respectively the concentration and the expectation of the j$^\mathrm{th}$ continuous tensor distribution.
+DIAMOND enables  assessment of compartment-specific diffusion characteristics such as the compartment FA (cFA), the compartment RD (cRD) and the compartment MD (cMD). It also provides a novel measure of microstructural heterogeneity for each compartment.
+
+The estimation of a continuous distribution of diffusion tensors requires DW data acquired with same timing parameters $\delta$ and $\Delta$ \citep{scherrer_mrm2015}. Therefore, we fitted one DIAMOND model for each \{$\delta$, $\Delta$\} group  (\textit{i.e.}, for each TE group), leading to $12$ DIAMOND models. One shell was missing in each TE group; we predicted its signal using the corresponding DIAMOND model. The model estimation was achieved as follows. We first computed the mean  and standard deviation  of $S_0$ ($\mu_{S_0}$ and $\sigma_{S_0}$) within each TE group and discarded DW-signals whose intensity were larger than $\mu_{S_0} + 3\sigma_{S_0}$ (simple artefact correction). We then estimated DIAMOND parameters as described in \citet{scherrer_mrm2015}, considering Gaussian noise and cylindrical anisotropic compartments. 
+For the genu we considered a model with one freely diffusing and one anisotropic compartment; for the fornix we considered a model with  one freely diffusing compartment and two anisotropic compartments.
+
+
+\section*{References}
+\bibliography{mybibfile}
+
+\end{document}
