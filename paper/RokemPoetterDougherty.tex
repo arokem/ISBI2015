@@ -1,0 +1,53 @@
+\documentclass[3p]{elsarticle}
+\usepackage{url}
+\usepackage{lineno,hyperref}
+\modulolinenumbers[5]
+
+\journal{NeuroImage}
+
+%%%%%%%%%%%%%%%%%%%%%%%
+%% Elsevier bibliography styles
+%%%%%%%%%%%%%%%%%%%%%%%
+%% To change the style, put a % in front of the second line of the current style and
+%% remove the % from the second line of the style you would like to use.
+%%%%%%%%%%%%%%%%%%%%%%%
+
+%% Numbered
+%\bibliographystyle{model1-num-names}
+
+%% Numbered without titles
+%\bibliographystyle{model1a-num-names}
+
+%% Harvard
+%\bibliographystyle{model2-names}\biboptions{authoryear}
+
+%% Vancouver numbered
+%\usepackage{numcompress}\bibliographystyle{model3-num-names}
+
+%% Vancouver name/year
+%\usepackage{numcompress}\bibliographystyle{model4-names}\biboptions{authoryear}
+
+%% APA style
+%\bibliographystyle{model5-names}\biboptions{authoryear}
+
+%% AMA style
+%\usepackage{numcompress}\bibliographystyle{model6-num-names}
+
+%% `Elsevier LaTeX' style
+\bibliographystyle{elsarticle-num}
+%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+
+\section{Models}
+
+\subsection{A restriction spectrum sparse fascicle model (RS-SFM)}
+
+{\bf Authors:} Ariel Rokem\footnote{The University of Washington eScience Institute}, Christian P\"{o}tter\footnote{The Stanford Center for Cognitive and Neurobiological Imaging } and Robert F. Dougherty \footnote{The Stanford Center for Cognitive and Neurobiological Imaging}
+
+The Sparse Fascicle Model (SFM \cite{Rokem2015}) is a member of the large family of models that account for the diffusion MRI signal in the white matter as a combination of signals due to compartments corresponding to different axonal fiber populations (fascicles), and other parts of the tissue. Model fitting proceeds in two steps. First, an isotropic component is fit. We model the effects of both the measurement echo time (TE), as well as the measurement b-value on the signal. These are fit as a $log(TE)$-dependent decay with a low order polynomial function, and a b-value-dependent multi-exponential decay (including also an offset to account for the Rician noise floor). The residuals from the isotropic component are then deconvolved with the perturbations in the signal due to a set of fascicle kernels each modeled as a radially symmetric ($\lambda_2=\lambda_3$) diffusion tensor. The putative kernels are distributed in a dense sampling grid on the sphere. Furthermore, Restriction Spectrum Imaging (RSI \cite{White2013}) is used to extend the model, by adding a range of fascicle kernels in each sampling point, with different axial and radial diffusivities, capturing diffusion at different scales. To restrict the number of anisotropic components (fascicles) in each voxel, and to prevent overfitting, the RS-SFM model employs the Elastic Net algorithm (EN \cite{Zou2005}), which applies a tunable combination of L1 and L2 regularization on the weights of the fascicle kernels. We used elements of the SFM implemented in the dipy software library \cite{Garyfallidis2014} and the EN implemented in scikit-learn \cite{pedregosa2011}. In addition, to account for differences in SNR, we implemented a weighted least-squares strategy whereby each signal’s contribution to the fit was weighted by its TE, as well as the gradient strength used. EN has two tuning parameters determining: 1) the ratio of L1-to-L2 regularization, and 2) the weight of the regularization relative to the least-squares fit to the signal. To find the proper values of these parameters, we employed k-fold cross-validation \cite{Rokem2015}, leaving out one shell of measurement in each iteration for cross-validation. We determined that the tuning parameters with the lowest LSE \cite{Panagiotaki2012} provide an almost-even balance of L1 and L2 penalty with weak overall regularization. Because of the combination of a dense sampling grid (362 points distributed on the sphere), and multiple restriction kernels (45 per sampling point), the maximal number of parameters for the model is approximately 16300, more than the number of data points. However, because regularization is employed, the effective number of parameters is much smaller, resulting in an active set of approximately 20 regressors \cite{Zou2007}. We have made code to fully reproduce our results available at \url{https://arokem.github.io/ISBI2015}.
+
+\section*{References}
+\bibliography{RokemPoetterDougherty}
+\end{document}
